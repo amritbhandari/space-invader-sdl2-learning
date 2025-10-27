@@ -1,18 +1,82 @@
+#include <SDL2/SDL.h>
 #include <iostream>
 
-// TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-int main()
-{
-    // TIP Press <shortcut actionId="RenameElement"/> when your caret is at the <b>lang</b> variable name to see how CLion can help you rename it.
-    auto lang = "C++";
-    std::cout << "Hello and welcome to " << lang << "!\n";
+using namespace std;
 
-    for (int i = 1; i <= 5; i++)
+auto SPRITES_FOLDER = "images/";
+constexpr int SCREEN_WIDTH = 800;
+constexpr int SCREEN_HEIGHT = 400;
+
+SDL_Window* window = NULL;
+SDL_Renderer* renderer = NULL;
+
+bool quit = false;
+
+bool initialiseSDL()
+{
+    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+        return false;
+
+    window = SDL_CreateWindow("Space Invader",
+                              SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT,
+                              SDL_WINDOW_SHOWN);
+    if (!window)
     {
-        // TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-        std::cout << "i = " << i << std::endl;
+        cout << "SDL_CreateWindow error: " << SDL_GetError() << endl;
+        SDL_Quit();
+        return false;
     }
 
-    return 0;
-    // TIP See CLion help at <a href="https://www.jetbrains.com/help/clion/">jetbrains.com/help/clion/</a>. Also, you can try interactive lessons for CLion by selecting 'Help | Learn IDE Features' from the main menu.
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if (!renderer)
+    {
+        cout << "SDL_CreateRenderer error: " << SDL_GetError() << endl;
+        SDL_Quit();
+        return false;
+    }
+
+    return true;
+}
+
+bool handleEvents()
+{
+    SDL_Event event;
+    while (SDL_PollEvent(&event) != 0)
+    {
+        switch (event.type)
+        {
+        case SDL_KEYDOWN:
+            if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_SPACE)
+            {
+                // HandleJump();
+            }
+            break;
+        case SDL_QUIT:
+            quit = true;
+            break;
+        case SDL_KEYUP:
+            // if (gameOver)
+            // {
+            //     if (event.key.keysym.sym == SDLK_SPACE)
+            //         ResetGame();
+            // }
+            break;
+        }
+    }
+}
+
+int main()
+{
+    if (!initialiseSDL())
+        return 1;
+
+    while (!quit)
+    {
+        handleEvents();
+    }
+
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+
+    SDL_Quit();
 }
