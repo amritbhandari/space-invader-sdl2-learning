@@ -1,8 +1,18 @@
 cmake_minimum_required(VERSION 4.0)
-project(temp CXX)
 
+project(SpaceInvader LANGUAGES CXX VERSION 0.1.0)
 set(CMAKE_CXX_STANDARD 20)
 
-find_package(SDL2 REQUIRED)
+set(SOURCE_FILES
+        src/main.cpp
+)
 
-add_executable(temp src/main.cpp)
+find_package(SDL2 REQUIRED)
+find_package(SDL2_image REQUIRED)
+#find_package(SDL2_ttf REQUIRED)
+
+add_executable(space ${SOURCE_FILES})
+
+target_link_libraries(space PRIVATE
+        SDL2::SDL2
+        SDL2_image::SDL2_image)
