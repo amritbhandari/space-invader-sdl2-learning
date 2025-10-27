@@ -2,6 +2,7 @@
 #include <SDL2/SDL_image.h>
 #include <iostream>
 #include <vector>
+#include <ctime>
 
 using namespace std;
 
@@ -15,11 +16,13 @@ constexpr int spaceshipY = 510;
 constexpr int spaceshipWidth = 50;
 constexpr int spaceshipSpeed = 10;
 constexpr int maxBullets = 10;
+constexpr int maxEnemies = 10;
 
 SDL_Window* window = nullptr;
 SDL_Renderer* renderer = nullptr;
 
 SDL_Texture* spaceshipTexture = nullptr;
+SDL_Texture* enemyTexture = nullptr;
 
 bool quit = false;
 
@@ -32,6 +35,18 @@ struct Bullet
 };
 
 vector<Bullet> bullets(maxBullets);
+
+struct Enemy
+{
+    int x;
+    int y;
+    int width = 50;
+    int height = 20;
+    int speed;
+    bool active;
+};
+
+vector<Enemy> enemies(maxEnemies);
 
 void fireBullets()
 {
@@ -71,6 +86,30 @@ void renderBullets()
             SDL_Rect rect = {bullet->x - 1, bullet->y, 2, 10};
             SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // red
             SDL_RenderFillRect(renderer, &rect);
+        }
+    }
+}
+
+void moveAndRenderEnemies()
+{
+    for (int i = 0; i < maxEnemies; i++)
+    {
+        if (Enemy* enemy = &enemies[i]; enemy->active)
+        {
+            enemy->y += enemy->speed;
+            if (enemy->y > SCREEN_HEIGHT)
+            {
+                enemy->x = rand() % SCREEN_WIDTH;
+                if (enemy->x + enemy->width >= SCREEN_WIDTH)
+                {
+                    enemy->x = SCREEN_WIDTH - enemy->width;
+                }
+                enemy->y = rand() % 100 - 150;
+                enemy->speed = rand() % 2 + 1;
+            }
+
+            SDL_Rect rect = {enemy->x, enemy->y, enemy->width, enemy->height};
+            SDL_RenderCopy(renderer, enemyTexture, nullptr, &rect);
         }
     }
 }
@@ -142,12 +181,32 @@ void handleEvents()
     }
 }
 
+void initialiseEnemies()
+{
+    srand(static_cast<unsigned>(time(nullptr)));
+    for (int i = 0; i < maxEnemies; i++)
+    {
+        Enemy* enemy = &enemies[i];
+        enemy->x = rand() % SCREEN_WIDTH;
+        enemy->y = rand() % 100 - 150;
+        enemy->active = true;
+        enemy->speed = rand() % 2 + 1;
+    }
+}
+
 bool loadMedia()
 {
     spaceshipTexture = IMG_LoadTexture(renderer, (SPRITES_FOLDER + string("spaceship.png")).c_str());
     if (!spaceshipTexture)
     {
         cout << "IMG_LoadTexture images/spaceship.png error: " << IMG_GetError() << endl;
+        return false;
+    }
+
+    enemyTexture = IMG_LoadTexture(renderer, (SPRITES_FOLDER + string("enemies.png")).c_str());
+    if (!enemyTexture)
+    {
+        cout << "IMG_LoadTexture images/enemies.png error: " << IMG_GetError() << endl;
         return false;
     }
 
@@ -168,6 +227,8 @@ int main()
         return 1;
     }
 
+    initialiseEnemies();
+
     while (!quit)
     {
         handleEvents();
@@ -183,6 +244,8 @@ int main()
 
         moveBullets();
         renderBullets();
+
+        moveAndRenderEnemies();
 
         SDL_RenderPresent(renderer);
         SDL_Delay(1);
