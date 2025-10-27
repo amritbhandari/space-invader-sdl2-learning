@@ -1,16 +1,79 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
 auto SPRITES_FOLDER = "images/";
-constexpr int SCREEN_WIDTH = 800;
-constexpr int SCREEN_HEIGHT = 400;
 
-SDL_Window* window = NULL;
-SDL_Renderer* renderer = NULL;
+constexpr int SCREEN_WIDTH = 800;
+constexpr int SCREEN_HEIGHT = 600;
+
+int spaceshipX = 400;
+constexpr int spaceshipY = 510;
+constexpr int spaceshipWidth = 50;
+constexpr int spaceshipSpeed = 10;
+constexpr int maxBullets = 10;
+
+SDL_Window* window = nullptr;
+SDL_Renderer* renderer = nullptr;
+
+SDL_Texture* spaceshipTexture = nullptr;
 
 bool quit = false;
+
+struct Bullet
+{
+    int x;
+    int y;
+    int speed;
+    bool active;
+};
+
+vector<Bullet> bullets(maxBullets);
+
+void fireBullets()
+{
+    for (int i = 0; i < maxBullets; i++)
+    {
+        if (Bullet* bullet = &bullets[i]; !bullet->active)
+        {
+            bullet->active = true;
+            bullet->x = spaceshipX + spaceshipWidth / 2;
+            bullet->y = spaceshipY;
+            bullet->speed = 5;
+
+            break;
+        }
+    }
+}
+
+void moveBullets()
+{
+    for (int i = 0; i < maxBullets; i++)
+    {
+        if (Bullet* bullet = &bullets[i]; bullet->active)
+        {
+            bullet->y -= bullet->speed;
+            if (bullet->y < 0)
+                bullet->active = false;
+        }
+    }
+}
+
+void renderBullets()
+{
+    for (int i = 0; i < maxBullets; i++)
+    {
+        if (Bullet* bullet = &bullets[i]; bullet->active)
+        {
+            SDL_Rect rect = {bullet->x - 1, bullet->y, 2, 10};
+            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // red
+            SDL_RenderFillRect(renderer, &rect);
+        }
+    }
+}
 
 bool initialiseSDL()
 {
@@ -38,7 +101,7 @@ bool initialiseSDL()
     return true;
 }
 
-bool handleEvents()
+void handleEvents()
 {
     SDL_Event event;
     while (SDL_PollEvent(&event) != 0)
@@ -46,9 +109,9 @@ bool handleEvents()
         switch (event.type)
         {
         case SDL_KEYDOWN:
-            if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_SPACE)
+            if (event.key.keysym.sym == SDLK_f)
             {
-                // HandleJump();
+                fireBullets();
             }
             break;
         case SDL_QUIT:
@@ -63,16 +126,66 @@ bool handleEvents()
             break;
         }
     }
+
+    const Uint8* currentKeyStates = SDL_GetKeyboardState(nullptr);
+    if (currentKeyStates[SDL_SCANCODE_LEFT])
+    {
+        spaceshipX = spaceshipX > 10
+                         ? spaceshipX - spaceshipSpeed
+                         : 10;
+    }
+    if (currentKeyStates[SDL_SCANCODE_RIGHT])
+    {
+        spaceshipX = (spaceshipX + spaceshipWidth < SCREEN_WIDTH - 10)
+                         ? spaceshipX + spaceshipSpeed
+                         : SCREEN_WIDTH - 10 - spaceshipWidth;
+    }
 }
+
+bool loadMedia()
+{
+    spaceshipTexture = IMG_LoadTexture(renderer, (SPRITES_FOLDER + string("spaceship.png")).c_str());
+    if (!spaceshipTexture)
+    {
+        cout << "IMG_LoadTexture images/spaceship.png error: " << IMG_GetError() << endl;
+        return false;
+    }
+
+    return true;
+}
+
 
 int main()
 {
     if (!initialiseSDL())
         return 1;
 
+    if (!loadMedia())
+    {
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
     while (!quit)
     {
         handleEvents();
+
+        //reset colour
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+
+        //reset
+        SDL_RenderClear(renderer);
+
+        SDL_Rect spaceshipRect = {spaceshipX, spaceshipY, spaceshipWidth, spaceshipWidth};
+        SDL_RenderCopy(renderer, spaceshipTexture, nullptr, &spaceshipRect);
+
+        moveBullets();
+        renderBullets();
+
+        SDL_RenderPresent(renderer);
+        SDL_Delay(1);
     }
 
     SDL_DestroyRenderer(renderer);
